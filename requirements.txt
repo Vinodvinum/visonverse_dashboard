@@ -5,3 +5,6 @@ xlsxwriter
 matplotlib
 seaborn
 scikit-learn
+numpy
+altair
+streamlit-autorefresh
