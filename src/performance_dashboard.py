@@ -73,7 +73,7 @@ def render_dashboard(df):
     - Cuboids: numeric
     - Role: 'Maker' or 'Editor'
     """
-    st.title("📈 VisionVerse — Performance Intelligence")
+    st.title("📈 VisonVerse — Performance Intelligence")
 
     if df is None or df.empty:
         st.warning("No data provided to performance dashboard.")

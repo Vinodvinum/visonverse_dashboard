@@ -2,13 +2,13 @@
 import streamlit as st
 from src.data_loader import load_team_data
 from src.performance_dashboard import render_dashboard
-#from src.weekly_report_generator import render_weekly_report
+from src.weekly_report_generator import render_weekly_report
 #from src.data_validation import render_data_validation
 from streamlit_autorefresh import st_autorefresh
 # Auto-refresh every 600 seconds
 st_autorefresh(interval=600000, key="data_refresh")
 
-st.set_page_config(page_title="VisionVerse Dashboard", page_icon="📊", layout="wide")
+st.set_page_config(page_title="VisonVerse Dashboard", page_icon="📊", layout="wide")
 
 role_map = {
     'Mukund': 'Editor',
@@ -44,9 +44,9 @@ role_map = {
 }
 
 # Sidebar Navigation
-st.sidebar.title("📊 VisionVerse Dashboard")
+st.sidebar.title("📊 VisonVerse Dashboard")
 page = st.sidebar.radio("Go to", [
-    "Home", "Performance Dashboard"
+    "Home", "Performance Dashboard", "Weekly Report"
 ])
 
 
@@ -59,9 +59,9 @@ if df.empty:
     st.stop()
 
 if page == "Home":
-    st.title("👁️ VisionVerse Annotation Dashboard")
+    st.title("👁️ VisonVerse Annotation Dashboard")
     st.markdown("""
-Welcome to the VisionVerse QA Dashboard.
+Welcome to the VisonVerse QA Dashboard.
 
 **Roles**:
 - **Makers** → 650/day (≥80% quality)  
@@ -73,8 +73,8 @@ Data updates from Google Sheets every 1 minute automatically (no reload).
 elif page == "Performance Dashboard":
     render_dashboard(df)
 
-#elif page == "Weekly Report":
-    #render_weekly_report(df)
+elif page == "Weekly Report":
+    render_weekly_report(df)
 
 #elif page == "Data Validation":
     #render_data_validation(df)
