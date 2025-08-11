@@ -31,12 +31,11 @@ def _parse_dates(df):
 def _daily_target_for_role(role):
     return MAKER_TARGET_DAILY if role == 'Maker' else EDITOR_TARGET_DAILY
 
-def _business_days_mon_sat(start, end):
-    """Count Mon-Sat inclusive between start and end (business days)."""
+def _business_days_mon_fri(start, end):
+    """Count Mon-Fri inclusive between start and end (business days)."""
     if pd.isna(start) or pd.isna(end):
         return 0
-    # Weekmask: 'Mon Tue Wed Thu Fri Sat'
-    rng = pd.date_range(start, end, freq='C', weekmask='Mon Tue Wed Thu Fri Sat')
+    rng = pd.bdate_range(start, end)
     return len(rng)
 
 def _aggregate_for_period(df_period, by='Rename'):
@@ -106,7 +105,7 @@ def render_dashboard(df):
             period_label = f"{start_date.date()}"
 
         elif view_period == "Weekly":
-            # Build ISO week options and show monday->saturday (6 working days/week)
+            # Build ISO week options and show monday->friday (5 working days/week)
             iso = df['Date_dt'].dt.isocalendar()
             df_iso = df.assign(iso_year=iso['year'], iso_week=iso['week'])
             combos = df_iso.groupby(['iso_year','iso_week'])['Date_dt'].agg(['min','max']).reset_index()
@@ -117,9 +116,9 @@ def render_dashboard(df):
                     monday = pd.Timestamp.fromisocalendar(y, w, 1)
                 except Exception:
                     monday = r['min']
-                # For 6-working-day week we use Mon-Sat
+                # For 5-working-day week we use Mon-Fri
                 start = monday.normalize()
-                end = (monday + pd.Timedelta(days=5)).normalize()
+                end = (monday + pd.Timedelta(days=4)).normalize()
                 opts.append((y, w, start, end))
             opt_labels = [f"{y}-W{w:02d} ({s.date()} → {e.date()})" for (y,w,s,e) in opts]
             if not opt_labels:
@@ -128,7 +127,7 @@ def render_dashboard(df):
             sel_idx = st.selectbox("Select Week", opt_labels, index=len(opt_labels)-1)
             chosen = opts[opt_labels.index(sel_idx)]
             start_date, end_date = chosen[2], chosen[3]
-            period_multiplier = 6   # Weekly = 6 days (Mon-Sat)
+            period_multiplier = 5   # per your clarification weekly = 5 days
             period_label = f"{start_date.date()} → {end_date.date()}"
 
         else:  # Monthly
@@ -150,14 +149,14 @@ def render_dashboard(df):
             sel_idx = st.selectbox("Select Month", opt_labels, index=len(opt_labels)-1)
             chosen = opts[opt_labels.index(sel_idx)]
             start_date, end_date = chosen[2], chosen[3]
-            period_multiplier = 24  # Monthly = 24 working days (Mon-Sat * 4 weeks)
+            period_multiplier = 20  # per your clarified monthly = 20 working days
             period_label = f"{calendar.month_name[chosen[1]]} {chosen[0]}"
 
         top_filter = st.selectbox("Show", ["All", "Top Performers", "Low Performers"])
         selected_person = st.selectbox("Select person (Personal tracker)", ["(none)"] + sorted(df['Rename'].unique()))
         st.markdown("---")
         st.write(f"Per-head daily targets: Maker = **{MAKER_TARGET_DAILY}**, Editor = **{EDITOR_TARGET_DAILY}**")
-        st.caption("Targets use fixed multipliers: Daily×1, Weekly×6, Monthly×24 (Mon–Sat working days).")
+        st.caption("Targets use fixed multipliers: Daily×1, Weekly×5, Monthly×20 (per your configuration).")
 
     # Filter by role
     df_view = df if role_filter == "All" else df[df['Role'] == role_filter].copy()
@@ -229,13 +228,12 @@ def render_dashboard(df):
     else:  # Editor
         base_target = EDITORS_COUNT * EDITOR_TARGET_DAILY
 
-    # Update team_period_target calculation
     if view_period == "Daily":
         team_period_target = base_target * 1
     elif view_period == "Weekly":
-        team_period_target = base_target * 6
+        team_period_target = base_target * 5
     else:  # Monthly
-        team_period_target = base_target * 24
+        team_period_target = base_target * 20
 
     # Compute target met count & annotator count from full aggregation (agg_full)
     if not agg_full.empty:
@@ -283,7 +281,7 @@ def render_dashboard(df):
     st.markdown("### ⚖️ Compensation Planner")
     today = pd.Timestamp.today().normalize()
     # Determine days passed in period (Mon-Fri business days) to calculate remaining days relative to multiplier
-    days_passed = _business_days_mon_sat(start_date, min(today, end_date))
+    days_passed = _business_days_mon_fri(start_date, min(today, end_date))
     remaining_days = max(period_multiplier - days_passed, 0)
     if remaining_days <= 0:
         st.info("No remaining working days left in this target window (or period ended).")
@@ -383,3 +381,4 @@ def render_dashboard(df):
             'Total Cuboids':'{:,}','Period Target':'{:,}','Deficit':'{:+,}'
         }))
 
+   
