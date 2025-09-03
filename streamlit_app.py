@@ -5,6 +5,8 @@ from src.performance_dashboard import render_dashboard
 from src.weekly_report_generator import render_weekly_report
 #from src.data_validation import render_data_validation
 from streamlit_autorefresh import st_autorefresh
+from src.team_structure import render_team_structure
+from src.quality_performance_dashboard import render_quality_dashboard
 # Auto-refresh every 600 seconds
 st_autorefresh(interval=600000, key="data_refresh")
 
@@ -46,7 +48,7 @@ role_map = {
 # Sidebar Navigation
 st.sidebar.title("📊 VisonVerse Dashboard")
 page = st.sidebar.radio("Go to", [
-    "Home", "Performance Dashboard", "Weekly Report"
+    "Home", "Performance Dashboard", "Weekly Report", "Team Structure", "Quality Performance"
 ])
 
 
@@ -75,6 +77,12 @@ elif page == "Performance Dashboard":
 
 elif page == "Weekly Report":
     render_weekly_report(df)
+
+elif page == "Team Structure":
+    render_team_structure(df)
+
+elif page == "Quality Performance":
+    render_quality_dashboard()
 
 #elif page == "Data Validation":
     #render_data_validation(df)
