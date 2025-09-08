@@ -6,8 +6,8 @@ import numpy as np
 import calendar
 
 # Constants (change if needed)
-MAKER_TARGET_DAILY = 650
-EDITOR_TARGET_DAILY = 1200
+MAKER_TARGET_DAILY = 780
+EDITOR_TARGET_DAILY = 1500
 MAKERS_COUNT = 20     # configured team size
 EDITORS_COUNT = 10    # configured team size
 
@@ -116,9 +116,9 @@ def render_dashboard(df):
                     monday = pd.Timestamp.fromisocalendar(y, w, 1)
                 except Exception:
                     monday = r['min']
-                # For 6-working-day week we use Mon-Sat
+                # For 5-working-day week we use Mon-Fri
                 start = monday.normalize()
-                end = (monday + pd.Timedelta(days=5)).normalize()
+                end = (monday + pd.Timedelta(days=4)).normalize()
                 opts.append((y, w, start, end))
             opt_labels = [f"{y}-W{w:02d} ({s.date()} → {e.date()})" for (y,w,s,e) in opts]
             if not opt_labels:
@@ -127,7 +127,7 @@ def render_dashboard(df):
             sel_idx = st.selectbox("Select Week", opt_labels, index=len(opt_labels)-1)
             chosen = opts[opt_labels.index(sel_idx)]
             start_date, end_date = chosen[2], chosen[3]
-            period_multiplier = 6   # per your clarification weekly = 6 days
+            period_multiplier = 5   # per your clarification weekly = 5 days
             period_label = f"{start_date.date()} → {end_date.date()}"
 
         else:  # Monthly
@@ -149,14 +149,14 @@ def render_dashboard(df):
             sel_idx = st.selectbox("Select Month", opt_labels, index=len(opt_labels)-1)
             chosen = opts[opt_labels.index(sel_idx)]
             start_date, end_date = chosen[2], chosen[3]
-            period_multiplier = 24  # per your clarified monthly = 24 working days
+            period_multiplier = 21  # per your clarified monthly = 21 working days
             period_label = f"{calendar.month_name[chosen[1]]} {chosen[0]}"
 
         top_filter = st.selectbox("Show", ["All", "Top Performers", "Low Performers"])
         selected_person = st.selectbox("Select person (Personal tracker)", ["(none)"] + sorted(df['Rename'].unique()))
         st.markdown("---")
         st.write(f"Per-head daily targets: Maker = **{MAKER_TARGET_DAILY}**, Editor = **{EDITOR_TARGET_DAILY}**")
-        st.caption("Targets use fixed multipliers: Daily×1, Weekly×5, Monthly×20 (per your configuration).")
+        st.caption("Targets use fixed multipliers: Daily×1, Weekly×5, Monthly×21 (per your configuration).")
 
     # Filter by role
     df_view = df if role_filter == "All" else df[df['Role'] == role_filter].copy()
@@ -231,9 +231,9 @@ def render_dashboard(df):
     if view_period == "Daily":
         team_period_target = base_target * 1
     elif view_period == "Weekly":
-        team_period_target = base_target * 6
+        team_period_target = base_target * 5
     else:  # Monthly
-        team_period_target = base_target * 24
+        team_period_target = base_target * 21
 
     # Compute target met count & annotator count from full aggregation (agg_full)
     if not agg_full.empty:
@@ -280,7 +280,7 @@ def render_dashboard(df):
     # ---------------- Compensation Planner ----------------
     st.markdown("### ⚖️ Compensation Planner")
     today = pd.Timestamp.today().normalize()
-    # Determine days passed in period (Mon-Sat business days) to calculate remaining days relative to multiplier
+    # Determine days passed in period (Mon-Fri business days) to calculate remaining days relative to multiplier
     days_passed = _business_days_mon_fri(start_date, min(today, end_date))
     remaining_days = max(period_multiplier - days_passed, 0)
     if remaining_days <= 0:

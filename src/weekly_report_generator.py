@@ -5,11 +5,11 @@ import altair as alt
 import calendar
 
 # Keep these constants in sync with performance_dashboard.py
-MAKER_TARGET_DAILY = 650
-EDITOR_TARGET_DAILY = 1200
+MAKER_TARGET_DAILY = 780
+EDITOR_TARGET_DAILY = 1500
 MAKERS_COUNT = 20
 EDITORS_COUNT = 10
-WEEK_WORKING_DAYS = 6  # Mon-Sat
+WEEK_WORKING_DAYS = 5  # Mon-Fri
 
 def _parse_dates_for_report(df):
     df = df.copy()
@@ -150,7 +150,7 @@ def render_weekly_report(df):
         color = 'background-color: #ffcccc' if val < 0 else ''
         return color
 
-    st.markdown("### 📋 Person-level totals (Mon → Sat)")
+    st.markdown("### 📋 Person-level totals (Mon → Fri)")
     st.dataframe(
         person_agg.style.format({'Total Cuboids': '{:,}', 'Weekly Target': '{:,}', 'Deficit': '{:+,}'})
         .applymap(lambda v: 'color: red;' if v < 0 else ('color: green;' if v > 0 else ''), subset=['Deficit'])
@@ -191,4 +191,4 @@ def render_weekly_report(df):
     else:
         st.write("No data for chart.")
 
-    st.caption(f"Week treated as Mon → Sat ({WEEK_WORKING_DAYS} working days). Per-head targets: Maker {MAKER_TARGET_DAILY} × {WEEK_WORKING_DAYS} = {maker_target_week}, Editor {EDITOR_TARGET_DAILY} × {WEEK_WORKING_DAYS} = {editor_target_week}.")
+    st.caption(f"Week treated as Mon → Fri ({WEEK_WORKING_DAYS} working days). Per-head targets: Maker {MAKER_TARGET_DAILY} × {WEEK_WORKING_DAYS} = {maker_target_week}, Editor {EDITOR_TARGET_DAILY} × {WEEK_WORKING_DAYS} = {editor_target_week}.")

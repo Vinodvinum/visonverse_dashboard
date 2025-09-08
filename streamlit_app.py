@@ -7,6 +7,7 @@ from src.weekly_report_generator import render_weekly_report
 from streamlit_autorefresh import st_autorefresh
 from src.team_structure import render_team_structure
 from src.quality_performance_dashboard import render_quality_dashboard
+from src.team_quality import render_team_quality
 # Auto-refresh every 600 seconds
 st_autorefresh(interval=600000, key="data_refresh")
 
@@ -48,7 +49,7 @@ role_map = {
 # Sidebar Navigation
 st.sidebar.title("📊 VisonVerse Dashboard")
 page = st.sidebar.radio("Go to", [
-    "Home", "Performance Dashboard", "Weekly Report", "Team Structure", "Quality Performance"
+    "Home", "Performance Dashboard", "Weekly Report", "Team Structure", "Quality Performance", "Team Quality"
 ])
 
 
@@ -66,8 +67,8 @@ if page == "Home":
 Welcome to the VisonVerse QA Dashboard.
 
 **Roles**:
-- **Makers** → 650/day (≥80% quality)  
-- **Editors** → 1200/day (≥95% quality)  
+- **Makers** → 780/day (≥80% quality)  
+- **Editors** → 1500/day (≥95% quality)  
 
 Data updates from Google Sheets every 1 minute automatically (no reload).
 """)
@@ -83,6 +84,9 @@ elif page == "Team Structure":
 
 elif page == "Quality Performance":
     render_quality_dashboard()
+
+elif page == "Team Quality":
+    render_team_quality()
 
 #elif page == "Data Validation":
     #render_data_validation(df)

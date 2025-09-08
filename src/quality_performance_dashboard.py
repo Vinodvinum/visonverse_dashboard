@@ -11,7 +11,8 @@ RENAMES = [
     "Ramesh", "Nithin"
 ]
 
-SCORE_MAP = {"Poor": 1, "Average": 2, "Good": 3, "VeryGood": 4, "Excellent": 5}
+SCORE_MAP = {"Poor": 1, "Average": 2, "Good": 2.5, "Excellent": 3}
+
 
 def fetch_all_sheets():
     dfs = []
@@ -20,27 +21,63 @@ def fetch_all_sheets():
         if not df.empty:
             df["Sheet"] = sheet
             dfs.append(df)
-    if dfs:
-        return pd.concat(dfs, ignore_index=True)
-    return pd.DataFrame()
+    return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+
 
 def calc_quality(df):
     df = df.copy()
     score_cols = ["Geometry", "BL", "DI", "Status", "Visibility", "Class"]
-    # Quality is 100% only if all scores are Excellent and Missing Cuboids is 0
-    df["Quality %"] = df.apply(
-        lambda row: 100 if all(row.get(col) == "Excellent" for col in score_cols if col in row)
-                        and row.get("Missing Cuboids", 1) == 0
-                    else 0,
-        axis=1
-    )
+
     for col in score_cols:
         if col in df.columns:
             df[col + " Score"] = df[col].map(SCORE_MAP)
+
+    def row_quality(row):
+        scores = [row.get(col + " Score") for col in score_cols if pd.notna(row.get(col + " Score"))]
+        if not scores:
+            return 0
+        base = (sum(scores) / len(scores)) / 3 * 100
+
+        total = row.get("Total Cuboids", 0)
+        missing = row.get("Missing Cuboids", 0)
+        penalty = (missing / total * 100) if total > 0 else 0
+        penalty = min(penalty, 30)
+
+        return max(0, base - penalty)
+
+    df["Quality %"] = df.apply(row_quality, axis=1)
+    df["Base Quality %"] = df[[c + " Score" for c in score_cols]].mean(axis=1) / 3 * 100
+    df["Penalty %"] = df.apply(
+        lambda r: min((r["Missing Cuboids"] / r["Total Cuboids"]) * 100, 30)
+        if r.get("Total Cuboids", 0) > 0 else 0, axis=1
+    )
+    if "Date" in df.columns:
+        df["Date_dt"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
     return df
 
+
+def classify_quality(q):
+    if q >= 90: return "Excellent"
+    elif q >= 75: return "Good"
+    elif q >= 60: return "Needs Improvement"
+    return "Critical"
+
+
+def text_color(val):
+    if pd.isna(val):
+        return ""
+    if isinstance(val, (int, float)):
+        if val >= 90: return "color: green"
+        elif val >= 75: return "color: orange"
+        else: return "color: red"
+    if val in ["Excellent"]: return "color: green"
+    if val in ["Good"]: return "color: orange"
+    if val in ["Needs Improvement", "Critical"]: return "color: red"
+    return ""
+
+
 def render_quality_dashboard():
-    st.title("🧮 Data Quality Performance Dashboard")
+    st.title("🧮 Individual Quality Performance Dashboard")
 
     with st.sidebar:
         st.header("Filters")
@@ -48,80 +85,87 @@ def render_quality_dashboard():
         selected_sheet = st.selectbox("Select Sheet", sheet_options)
         selected_person = st.selectbox("Select Annotator", ["All"] + RENAMES)
         date_range = st.date_input("Submission Date Range", [])
-        st.markdown("---")
-        st.caption("Quality % = 100 only if all scores are Excellent and Missing Cuboids is 0")
 
-    # Load data
-    if selected_sheet == "All":
-        df = fetch_all_sheets()
-    else:
-        df = load_quality_data(sheet_name=selected_sheet)
-        if not df.empty:
-            df["Sheet"] = selected_sheet
+    df = fetch_all_sheets() if selected_sheet == "All" else load_quality_data(sheet_name=selected_sheet)
+    if selected_sheet != "All" and not df.empty:
+        df["Sheet"] = selected_sheet
 
     if df.empty:
         st.warning("No quality data available.")
         return
 
-    # Filter by annotator
+    df = calc_quality(df)
+    df = df[df["Rename"] != "Select Names"]
+
     if selected_person != "All":
         df = df[df["Rename"] == selected_person]
-
-    # Filter by date range
     if date_range and len(date_range) == 2:
-        df = df[(df["Date_dt"] >= pd.to_datetime(date_range[0])) & (df["Date_dt"] <= pd.to_datetime(date_range[1]))]
+        df = df[(df["Date_dt"] >= pd.to_datetime(date_range[0])) &
+                (df["Date_dt"] <= pd.to_datetime(date_range[1]))]
 
     if df.empty:
         st.warning("No records for selected filters.")
         return
 
-    df = calc_quality(df)
-    df = df[df["Rename"] != "Select Names"]  # Ignore incomplete rows
+    # KPIs
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Avg Base %", f"{df['Base Quality %'].mean():.1f}%")
+    col2.metric("Avg Penalty %", f"-{df['Penalty %'].mean():.1f}%")
+    col3.metric("Final Quality %", f"{df['Quality %'].mean():.1f}%")
+    col4.metric("Jobs Evaluated", f"{df['Job ID'].nunique()}")
 
-    # --- Quality Distribution ---
-    st.markdown("### Quality Distribution")
-    dist = df["Quality %"].value_counts().reset_index()
-    dist.columns = ["Quality %", "Count"]
-    pie = alt.Chart(dist).mark_arc().encode(
-        theta=alt.Theta("Count:Q", stack=True),
-        color=alt.Color("Quality %:N"),
-        tooltip=["Quality %", "Count"]
-    ).properties(title="Quality Distribution")
-    st.altair_chart(pie, use_container_width=True)
+    # Trend
+    st.markdown("### 📈 Quality Trend Over Time")
+    trend = df.groupby("Date_dt")[["Base Quality %", "Quality %"]].mean().reset_index()
+    st.altair_chart(
+        alt.Chart(trend).mark_line(point=True).encode(
+            x="Date_dt:T", y="Quality %:Q", tooltip=["Date_dt", "Base Quality %", "Quality %"]
+        ).properties(height=300), use_container_width=True
+    )
 
-    # --- Visualization ---
-    if selected_person == "All":
-        # Line graph: Quality % for all annotators across sheets
-        agg = df.groupby(["Rename", "Sheet"])["Quality %"].mean().reset_index()
-        line = alt.Chart(agg).mark_line(point=True).encode(
-            x=alt.X("Sheet:N", title="Sheet"),
-            y=alt.Y("Quality %:Q"),
-            color="Rename:N",
-            tooltip=["Rename", "Sheet", "Quality %"]
-        ).properties(height=400, title="Annotator Quality % by Sheet")
-        st.altair_chart(line, use_container_width=True)
-        st.dataframe(agg.style.format({"Quality %": "{:.2f}"}))
-    else:
-        # Line graph: Selected annotator's quality % per sheet
-        agg = df.groupby("Sheet")["Quality %"].mean().reset_index()
-        line = alt.Chart(agg).mark_line(point=True).encode(
-            x=alt.X("Sheet:N", title="Sheet"),
-            y=alt.Y("Quality %:Q"),
-            tooltip=["Sheet", "Quality %"]
-        ).properties(height=300, title=f"{selected_person} Quality % by Sheet")
-        st.altair_chart(line, use_container_width=True)
-        st.dataframe(agg.style.format({"Quality %": "{:.2f}"}))
+    # Breakdown
+    st.markdown("### 📊 Score Breakdown by Metric")
+    score_cols = [c for c in df.columns if c.endswith(" Score")]
+    score_avg = df[score_cols].mean().reset_index()
+    score_avg.columns = ["Metric", "Avg Score"]
+    st.altair_chart(
+        alt.Chart(score_avg).mark_bar().encode(
+            x="Metric:N", y="Avg Score:Q", color="Avg Score:Q",
+            tooltip=["Metric", "Avg Score"]
+        ).properties(height=300), use_container_width=True
+    )
 
-        # Show average score per sheet for each score column
-        score_cols = [col + " Score" for col in ["Geometry", "BL", "DI", "Status", "Visibility", "Class"] if col + " Score" in df.columns]
-        if score_cols:
-            score_agg = df.groupby("Sheet")[score_cols].mean().reset_index()
-            st.markdown("#### Average Score by Sheet")
-            st.dataframe(score_agg.style.format({col: "{:.2f}" for col in score_cols}))
+    # Leaderboard
+    st.markdown("### 🏆 Annotator Leaderboard")
+    per_person = df.groupby("Rename").agg({
+        "Base Quality %": "mean", "Penalty %": "mean", "Quality %": "mean",
+        "Total Cuboids": "sum", "Missing Cuboids": "sum"
+    }).reset_index()
+    per_person["Decision"] = per_person["Quality %"].apply(classify_quality)
+    st.dataframe(per_person.style.applymap(text_color))
 
-    # --- Detailed Table ---
+    # Decision summary
+    st.markdown("### 📝 Decision Summary")
+    decision_counts = per_person["Decision"].value_counts().reset_index()
+    decision_counts.columns = ["Category", "Count"]
+    st.dataframe(decision_counts.style.applymap(text_color))
+
+    # Improvement areas
+    st.markdown("### 🔍 Improvement Areas")
+    improvement_df = []
+    for person, sub in df.groupby("Rename"):
+        avg_scores = sub[score_cols].mean()
+        weak = [m.replace(" Score", "") for m, s in avg_scores.items() if pd.notna(s) and s < 3]
+        improvement_df.append({
+            "Annotator": person,
+            "Weakest Areas": ", ".join(weak) if weak else "None",
+            "Quality %": sub["Quality %"].mean()
+        })
+    st.dataframe(pd.DataFrame(improvement_df).style.applymap(text_color))
+
+    # Detailed table
     st.markdown("### 📋 Detailed Quality Table")
-    st.dataframe(df.style.format({"Total Cuboids": "{:,}", "Missing Cuboids": "{:,}", "Quality %": "{:.2f}"}))
-
-# To use in your main app:
-# render_quality_dashboard()
+    detail_cols = ["Rename", "Job ID", "BL", "DI", "Status", "Visibility", "Class", "Geometry",
+                   "Base Quality %", "Penalty %", "Quality %", "Sheet", "Date_fmt"]
+    detail_df = df[[c for c in detail_cols if c in df.columns]]
+    st.dataframe(detail_df.style.applymap(text_color))
