@@ -53,7 +53,25 @@ def load_team_data(role_map):
         return pd.DataFrame()
 
     df.columns = df.columns.str.strip()
-    df = df[~df['Name'].isin(['TOTAL', 'DEFICIT'])]
+
+    # Google CSV can include duplicate headers like "Apr-23.1"; keep the base date column only.
+    keep_cols = []
+    seen_cols = set()
+    for col in df.columns:
+        if re.search(r"\.\d+$", col):
+            base = re.sub(r"\.\d+$", "", col)
+            if base in seen_cols:
+                continue
+        keep_cols.append(col)
+        seen_cols.add(col)
+    df = df[keep_cols]
+
+    # Exclude summary rows even if they appear in Name or Rename with varying casing.
+    name_s = df['Name'].astype(str) if 'Name' in df.columns else pd.Series("", index=df.index)
+    rename_s = df['Rename'].astype(str) if 'Rename' in df.columns else pd.Series("", index=df.index)
+    is_summary = name_s.str.contains(r"TOTAL|DEFICIT|GRAND TOTAL", case=False, na=False) | \
+        rename_s.str.contains(r"TOTAL|DEFICIT|GRAND TOTAL", case=False, na=False)
+    df = df[~is_summary]
 
     if 'Role' in df.columns:
         date_columns = [col for col in df.columns if col not in ['Name', 'Rename', 'Role']]
