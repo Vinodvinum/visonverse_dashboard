@@ -30,6 +30,10 @@ def _parse_dates(df):
         df['Date_dt'] = pd.to_datetime(df['Date_dt'], errors='coerce')
     df['Date_dt'] = df['Date_dt'].dt.normalize()
     return df
+
+def _daily_target_for_role(role):
+    return MAKER_TARGET_DAILY if role == 'Maker' else EDITOR_TARGET_DAILY
+
 def _business_days_mon_fri(start, end):
     """Count Mon-Fri inclusive between start and end (business days)."""
     if pd.isna(start) or pd.isna(end):
