@@ -47,6 +47,7 @@ def _parse_dates(df: pd.DataFrame) -> pd.DataFrame:
     valid_year = df['Date_dt'].notna() & df['Date_dt'].dt.year.between(min_year, max_year)
     df.loc[~valid_year, 'Date_dt'] = pd.NaT
     df['Date_dt'] = df['Date_dt'].apply(lambda d: d.replace(year=d.year - 1) if pd.notna(d) and d > today else d)
+    df['Date_dt'] = df['Date_dt'].fillna(today)
     df['Date_dt'] = df['Date_dt'].dt.normalize()
     return df
 

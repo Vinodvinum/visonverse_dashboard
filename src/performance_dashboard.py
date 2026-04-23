@@ -38,6 +38,8 @@ def _parse_dates(df):
 
     # If parsed date is in the future, shift back by one year.
     df['Date_dt'] = df['Date_dt'].apply(lambda d: d.replace(year=d.year - 1) if pd.notna(d) and d > today else d)
+
+    df['Date_dt'] = df['Date_dt'].fillna(today)
     df['Date_dt'] = df['Date_dt'].dt.normalize()
     return df
 
@@ -99,8 +101,6 @@ def render_dashboard(df):
         if col not in df.columns:
             st.error(f"Missing required column: {col}")
             return
-    df['Cuboids'] = pd.to_numeric(df['Cuboids'], errors='coerce')
-    df = df.dropna(subset=['Cuboids', 'Date_dt', 'Rename'])
 
     # Sidebar: period & filters
     with st.sidebar:
@@ -214,9 +214,9 @@ def render_dashboard(df):
     # ---------------- KPIs ----------------
     st.subheader(f"{view_period} Overview — {period_label}")
     col1, col2, col3 = st.columns(3)
-    total_team = agg_full['Total Cuboids'].sum()
-    avg_person = agg_full['Total Cuboids'].mean()
-    pct_met = 100.0 * (agg_full['Target Met'].sum() / len(agg_full)) if len(agg_full) > 0 else 0.0
+    total_team = agg['Total Cuboids'].sum()
+    avg_person = agg['Total Cuboids'].mean()
+    pct_met = 100.0 * (agg['Target Met'].sum() / len(agg)) if len(agg) > 0 else 0.0
     col1.metric("Team Total (period)", f"{int(total_team):,}")
     col2.metric("Avg per person (period)", f"{avg_person:.1f}")
     col3.metric("% meeting target", f"{pct_met:.1f}%")
@@ -367,10 +367,7 @@ def render_dashboard(df):
             st.altair_chart(line, use_container_width=True)
             streaks = _compute_streaks(df_view)
             st.info(f"🏅 {selected_person} — longest daily-target streak: **{streaks.get(selected_person,0)}** days")
-            recent_total = p_agg[
-                (p_agg['Date_dt'] >= pd.to_datetime(start_date)) &
-                (p_agg['Date_dt'] <= pd.to_datetime(end_date))
-            ]['Cuboids'].sum()
+            recent_total = p_agg[p_agg['Date_dt'] >= pd.to_datetime(start_date)]['Cuboids'].sum()
             person_role = df_view[df_view['Rename'] == selected_person]['Role'].iloc[0] if not df_view[df_view['Rename'] == selected_person].empty else 'Maker'
             st.write(f"Total in period: **{int(recent_total):,}** | Period target: **{_daily_target_for_role(person_role) * period_multiplier:,}**")
     else:
