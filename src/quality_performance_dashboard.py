@@ -26,6 +26,8 @@ def fetch_all_sheets():
 
 def calc_quality(df):
     df = df.copy()
+        for col in ["Total Cuboids", "Missing Cuboids"]:
+                    if col in df.columns: df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
     score_cols = ["Geometry", "BL", "DI", "Status", "Visibility", "Class"]
 
     for col in score_cols:
