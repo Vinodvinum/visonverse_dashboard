@@ -94,7 +94,7 @@ def _select_period(df: pd.DataFrame):
             d for d in df['Date_dt'].dt.date.unique()
             if d is not None and 2000 <= d.year <= max_year
         )
-        default_date = available[-1] if available else pd.Timestamp.today().date()
+        default_date = pd.Timestamp.today().date()
         sel_date = st.sidebar.date_input(
             "Select date", value=default_date,
             min_value=available[0] if available else None,
@@ -231,7 +231,7 @@ def render_team_structure(df: pd.DataFrame):
             per_person[['Rename', 'Role', 'Total Cuboids', 'Period Target', 'Deficit', 'Target Met']]
             .sort_values('Total Cuboids', ascending=False)
             .style.format({'Total Cuboids': '{:,}', 'Period Target': '{:,}', 'Deficit': '{:+,}'})
-                  .applymap(lambda v: 'color: #2ca02c' if isinstance(v, (int, float)) and v > 0
+                  .map(lambda v: 'color: #2ca02c' if isinstance(v, (int, float)) and v > 0
                                         else ('color: #d62728' if isinstance(v, (int, float)) and v < 0 else ''),
                             subset=['Deficit'])
         )
@@ -284,7 +284,7 @@ def render_team_structure(df: pd.DataFrame):
 
         st.dataframe(
             summary_df.style.format({'Total Cuboids': '{:,}', 'Team Target': '{:,}', 'Deficit': '{:+,}', '% Met': '{:.1f}%'})
-                      .applymap(lambda v: 'color: #2ca02c' if isinstance(v, (int, float)) and v > 0
+                      .map(lambda v: 'color: #2ca02c' if isinstance(v, (int, float)) and v > 0
                                             else ('color: #d62728' if isinstance(v, (int, float)) and v < 0 else ''),
                                 subset=['Deficit'])
         )
