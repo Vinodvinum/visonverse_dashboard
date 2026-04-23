@@ -22,8 +22,8 @@ def _parse_dates(df):
         df['Date_dt'] = pd.to_datetime(df['Date'], errors='coerce')
         if df['Date_dt'].isna().all():
             df['Date_dt'] = pd.to_datetime(df['Date'].astype(str) + ' 2025', errors='coerce')
-                    # Fix future dates: if parsed date is in the future, subtract 1 year
-                today = pd.Timestamp.today().normalize()
+                    # Fix future dates: if parsed date is in the future, subtract 1 y                today = pd.Timestamp.today().normalize()
+                    today = pd.Timestamp.today().normalize()
                     df['Date_dt'] = df['Date_dt'].apply(lambda d: d.replace(year=d.year - 1) if pd.notna(d) and d > today else d)
         df['Date_dt'] = df['Date_dt'].fillna(pd.Timestamp.today().normalize())
     else:
