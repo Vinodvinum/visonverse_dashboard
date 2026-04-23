@@ -5,16 +5,16 @@ import calendar
 
 # ---- Team roster (include aliases in parentheses; both will be recognized) ----
 TEAM_STRUCTURE = {
-    \"A\": {\"Lead Editor\": \"Sharath\",\"Coordinator\": \"Abhina\",
-         \"Members\": [\"Bhanushekar (AvinaShree)\", \"Abhinashree\", \"Priyanka (Mokshashree CM)\", \"PriyaPragathi (Sushmitha S)\"]},
-    \"B\": {\"Lead Editor\": \"Danny\",\"Coordinator\": \"Aina\",
-         \"Members\": [\"Chandu M\", \"Aarohi\", \"Kruthi\", \"Shivukumar\"]},
-    \"C\": {\"Lead Editor\": \"Ravi\",\"Coordinator\": \"Nayana\",
-         \"Members\": [\"Thashvi (Amulya)\", \"Jyothi (Arpitha)\", \"Deepika (chandana)\", \"Nayana\"]},
-    \"D\": {\"Lead Editor\": \"Vinod\",\"Coordinator\": \"Dhanushree\",
-         \"Members\": [\"Nisarga\", \"Shilpa (divya)\", \"Dhanushree\", \"Sneha KM\"]},
-    \"E\": {\"Lead Editor\": \"Ramesh\",\"Coordinator\": \"Babu\",
-         \"Members\": [\"Praveen (Babu M)\", \"Manu\", \"Abhishek\", \"Mohammad\"]}
+    "A": {"Lead Editor": "Sharath","Coordinator": "Abhina",
+         "Members": ["Bhanushekar (AvinaShree)", "Abhinashree", "Priyanka (Mokshashree CM)", "PriyaPragathi (Sushmitha S)"]},
+    "B": {"Lead Editor": "Danny","Coordinator": "Aina",
+         "Members": ["Chandu M", "Aarohi", "Kruthi", "Shivukumar"]},
+    "C": {"Lead Editor": "Ravi","Coordinator": "Nayana",
+         "Members": ["Thashvi (Amulya)", "Jyothi (Arpitha)", "Deepika (chandana)", "Nayana"]},
+    "D": {"Lead Editor": "Vinod","Coordinator": "Dhanushree",
+         "Members": ["Nisarga", "Shilpa (divya)", "Dhanushree", "Sneha KM"]},
+    "E": {"Lead Editor": "Ramesh","Coordinator": "Babu",
+         "Members": ["Praveen (Babu M)", "Manu", "Abhishek", "Mohammad"]}
 }
 
 # ---- Targets (keep in sync with performance_dashboard.py) ----
@@ -29,7 +29,7 @@ def _parse_dates(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     if 'Date' not in df.columns:
         if 'Date_dt' in df.columns: return df
-        st.error(\"Input dataframe must contain 'Date' or 'Date_dt'.\")
+        st.error("Input dataframe must contain 'Date' or 'Date_dt'.")
         return df
     
     def _smart_parse(val):
@@ -76,17 +76,17 @@ def _daily_target_for_role(role: str) -> int:
 # ------------------------------------------------------------------
 
 def _select_period(df: pd.DataFrame):
-    st.sidebar.header(\"Team Page Filters\")
-    view_period = st.sidebar.radio(\"Timeframe\", [\"Daily\", \"Weekly\", \"Monthly\"], index=0)
+    st.sidebar.header("Team Page Filters")
+    view_period = st.sidebar.radio("Timeframe", ["Daily", "Weekly", "Monthly"], index=0)
     
-    if view_period == \"Daily\":
+    if view_period == "Daily":
         available = sorted(df['Date_dt'].dt.date.unique())
         default_date = available[-1] if available else pd.Timestamp.today().date()
-        sel_date = st.sidebar.date_input(\"Select date\", value=default_date)
+        sel_date = st.sidebar.date_input("Select date", value=default_date)
         start = end = pd.Timestamp(sel_date).normalize()
         multiplier = 1
-        label = f\"{start.date()}\"
-    elif view_period == \"Weekly\":
+        label = f"{start.date()}"
+    elif view_period == "Weekly":
         iso = df['Date_dt'].dt.isocalendar()
         df_iso = df.assign(iso_year=iso['year'], iso_week=iso['week'])
         combos = df_iso.groupby(['iso_year', 'iso_week'])['Date_dt'].agg(['min', 'max']).reset_index()
@@ -99,15 +99,15 @@ def _select_period(df: pd.DataFrame):
             end = (monday + pd.Timedelta(days=4)).normalize()
             opts.append((y, w, start, end))
         
-        labels = [f\"{y}-W{w:02d} ({s.date()} -> {e.date()})\" for (y, w, s, e) in opts]
+        labels = [f"{y}-W{w:02d} ({s.date()} -> {e.date()})" for (y, w, s, e) in opts]
         if not labels:
-            st.warning(\"No weekly ranges available.\")
+            st.warning("No weekly ranges available.")
             return None
-        sel = st.sidebar.selectbox(\"Select week\", labels, index=len(labels) - 1)
+        sel = st.sidebar.selectbox("Select week", labels, index=len(labels) - 1)
         chosen = opts[labels.index(sel)]
         start, end = chosen[2], chosen[3]
         multiplier = 5
-        label = f\"{start.date()} -> {end.date()}\"
+        label = f"{start.date()} -> {end.date()}"
     else: # Monthly
         df_m = df.copy()
         df_m['year'] = df_m['Date_dt'].dt.year
@@ -121,22 +121,22 @@ def _select_period(df: pd.DataFrame):
             end = pd.Timestamp(year=y, month=m, day=last).normalize()
             opts.append((y, m, start, end))
         
-        labels = [f\"{y}-{m:02d} ({calendar.month_name[m]} {y})\" for (y, m, _, _) in opts]
+        labels = [f"{y}-{m:02d} ({calendar.month_name[m]} {y})" for (y, m, _, _) in opts]
         if not labels:
-            st.warning(\"No monthly ranges available.\")
+            st.warning("No monthly ranges available.")
             return None
-        sel = st.sidebar.selectbox(\"Select month\", labels, index=len(labels) - 1)
+        sel = st.sidebar.selectbox("Select month", labels, index=len(labels) - 1)
         chosen = opts[labels.index(sel)]
         start, end = chosen[2], chosen[3]
         multiplier = 21
-        label = f\"{calendar.month_name[chosen[1]]} {chosen[0]}\"
+        label = f"{calendar.month_name[chosen[1]]} {chosen[0]}"
         
     return {
-        \"view_period\": view_period,
-        \"start_date\": start,
-        \"end_date\": end,
-        \"period_label\": label,
-        \"period_multiplier\": multiplier
+        "view_period": view_period,
+        "start_date": start,
+        "end_date": end,
+        "period_label": label,
+        "period_multiplier": multiplier
     }
 
 # ------------------------------------------------------------------
@@ -144,17 +144,17 @@ def _select_period(df: pd.DataFrame):
 # ------------------------------------------------------------------
 
 def render_team_structure(df: pd.DataFrame):
-    st.title(\"👥 Team Management & Performance\")
+    st.title("👥 Team Management & Performance")
     
     if df is None or df.empty:
-        st.warning(\"No data provided.\")
+        st.warning("No data provided.")
         return
         
     df = _parse_dates(df)
     
     for c in ['Rename', 'Role', 'Cuboids', 'Date_dt']:
         if c not in df.columns:
-            st.error(f\"Missing required column: {c}\")
+            st.error(f"Missing required column: {c}")
             return
             
     df['Cuboids'] = pd.to_numeric(df['Cuboids'], errors='coerce').fillna(0)
@@ -162,20 +162,20 @@ def render_team_structure(df: pd.DataFrame):
     period = _select_period(df)
     if period is None: return
     
-    start_date = period[\"start_date\"]
-    end_date = period[\"end_date\"]
-    period_label = period[\"period_label\"]
-    period_multiplier = period[\"period_multiplier\"]
+    start_date = period["start_date"]
+    end_date = period["end_date"]
+    period_label = period["period_label"]
+    period_multiplier = period["period_multiplier"]
     
-    st.subheader(f\"{period['view_period']} Overview — {period_label}\")
+    st.subheader(f"{period['view_period']} Overview — {period_label}")
     
     df_period = df[(df['Date_dt'] >= start_date) & (df['Date_dt'] <= end_date)].copy()
     if df_period.empty:
-        st.info(\"No records in the selected period.\")
+        st.info("No records in the selected period.")
         return
         
     annotator_to_team = _build_annotator_to_team()
-    df_period['Team'] = df_period['Rename'].map(annotator_to_team).fillna(\"Unassigned\")
+    df_period['Team'] = df_period['Rename'].map(annotator_to_team).fillna("Unassigned")
     
     for team in sorted(TEAM_STRUCTURE.keys()):
         info = TEAM_STRUCTURE[team]
@@ -188,12 +188,12 @@ def render_team_structure(df: pd.DataFrame):
         
         team_df = df_period[df_period['Rename'].isin(team_names)].copy()
         
-        st.markdown(f\"#### Team {team}\")
-        st.write(f\"**Lead Editor:** {info['Lead Editor']} | **Coordinator:** {info['Coordinator']}\")
+        st.markdown(f"#### Team {team}")
+        st.write(f"**Lead Editor:** {info['Lead Editor']} | **Coordinator:** {info['Coordinator']}")
         
         if team_df.empty:
-            st.warning(f\"No data for Team {team} in this period.\")
-            st.markdown(\"---\")
+            st.warning(f"No data for Team {team} in this period.")
+            st.markdown("---")
             continue
             
         per_person = team_df.groupby(['Rename', 'Role'])['Cuboids'].sum().reset_index().rename(columns={'Cuboids': 'Total Cuboids'})
@@ -208,4 +208,5 @@ def render_team_structure(df: pd.DataFrame):
             .style.format({'Total Cuboids': '{:,}', 'Period Target': '{:,}', 'Deficit': '{:+,}'})
             .map(lambda v: 'color: #2ca02c' if isinstance(v, (int, float)) and v >= 0 else 'color: #d62728', subset=['Deficit'])
         )
-        st.markdown(\"---\")
+        st.markdown("---")
+
