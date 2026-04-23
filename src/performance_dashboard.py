@@ -16,22 +16,24 @@ def _parse_dates(df):
     """Ensure Date_dt exists and normalized."""
     df = df.copy()
     if 'Date_dt' not in df.columns:
+def _parse_dates(df):
+    """Ensure Date_dt exists and normalized."""
+    df = df.copy()
+    if 'Date_dt' not in df.columns:
         if 'Date' not in df.columns:
             st.error("Input dataframe must contain a 'Date' column.")
             return df
         df['Date_dt'] = pd.to_datetime(df['Date'], errors='coerce')
         if df['Date_dt'].isna().all():
             df['Date_dt'] = pd.to_datetime(df['Date'].astype(str) + ' 2025', errors='coerce')
-                    # Fix future dates: if parsed date is in the future, subtract 1 y                today = pd.Timestamp.today().normalize()
+            # Fix future dates: if parsed date is in the future, subtract 1 year
             today = pd.Timestamp.today().normalize()
-                    df['Date_dt'] = df['Date_dt'].apply(lambda d: d.replace(year=d.year - 1) if pd.notna(d) and d > today else d)else:
+            df['Date_dt'] = df['Date_dt'].apply(lambda d: d.replace(year=d.year - 1) if pd.notna(d) and d > today else d)
+        df['Date_dt'] = df['Date_dt'].fillna(pd.Timestamp.today().normalize())
+    else:
         df['Date_dt'] = pd.to_datetime(df['Date_dt'], errors='coerce')
     df['Date_dt'] = df['Date_dt'].dt.normalize()
     return df
-
-def _daily_target_for_role(role):
-    return MAKER_TARGET_DAILY if role == 'Maker' else EDITOR_TARGET_DAILY
-
 def _business_days_mon_fri(start, end):
     """Count Mon-Fri inclusive between start and end (business days)."""
     if pd.isna(start) or pd.isna(end):
