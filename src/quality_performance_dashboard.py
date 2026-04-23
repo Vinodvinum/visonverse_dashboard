@@ -48,8 +48,8 @@ def calc_quality(df):
     df["Quality %"] = df.apply(row_quality, axis=1)
     df["Base Quality %"] = df[[c + " Score" for c in score_cols]].mean(axis=1) / 3 * 100
     df["Penalty %"] = df.apply(
-        lambda r: min((r["Missing Cuboids"] / r["Total Cuboids"]) * 100, 30)
-        if r.get("Total Cuboids", 0) > 0 else 0, axis=1
+        lambda r: min((float(r["Missing Cuboids"] or 0) / float(r["Total Cuboids"] or 1)) * 100, 30)
+        if float(r.get("Total Cuboids") or 0) > 0 else 0, axis=1
     )
     if "Date" in df.columns:
         df["Date_dt"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
