@@ -15,21 +15,21 @@ def _parse_dates_for_report(df):
     df = df.copy()
     if 'Date_dt' in df.columns:
         df['Date_dt'] = pd.to_datetime(df['Date_dt'], errors='coerce').dt.normalize()
-        return df
-
-    if 'Date' not in df.columns:
-        st.error("Input must include 'Date' or 'Date_dt' column.")
-        return df
-
-    df['Date_dt'] = pd.to_datetime(df['Date'], errors='coerce')
-    if df['Date_dt'].isna().all():
-        df['Date_dt'] = pd.to_datetime(df['Date'].astype(str) + ' 2025', errors='coerce')
-                # Fix future dates: if parsed date is in the future, subtract 1 year
+def _parse_dates_for_report(df):
+    df = df.copy()
+    if 'Date_dt' not in df.columns:
+        if 'Date' not in df.columns:
+            st.error("Input dataframe must contain 'Date' or 'Date_dt'.")
+            return df
+        df['Date_dt'] = pd.to_datetime(df['Date'], errors='coerce')
+        if df['Date_dt'].isna().all():
+            df['Date_dt'] = pd.to_datetime(df['Date'].astype(str) + ' 2025', errors='coerce')
+            # Fix future dates: if parsed date is in the future, subtract 1 year
             today = pd.Timestamp.today().normalize()
-                df['Date_dt'] = df['Date_dt'].apply(lambda d: d.replace(year=d.year - 1) if pd.notna(d) and d > today else d)
-
-    df['Date_dt'] = df['Date_dt'].fillna(pd.Timestamp.today().normalize())
-    df['Date_dt'] = df['Date_dt'].dt.normalize()
+            df['Date_dt'] = df['Date_dt'].apply(lambda d: d.replace(year=d.year - 1) if pd.notna(d) and d > today else d)
+        df['Date_dt'] = df['Date_dt'].fillna(pd.Timestamp.today().normalize())
+    else:
+        df['Date_dt'] = pd.to_datetime(df['Date_dt'], errors='coerce').dt.normalize()
     return df
 
 def render_weekly_report(df):
