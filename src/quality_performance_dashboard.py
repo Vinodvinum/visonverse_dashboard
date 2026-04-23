@@ -38,8 +38,8 @@ def calc_quality(df):
             return 0
         base = (sum(scores) / len(scores)) / 3 * 100
 
-        total = row.get("Total Cuboids", 0)
-        missing = row.get("Missing Cuboids", 0)
+        total = float(row.get("Total Cuboids") or 0)
+        missing = float(row.get("Missing Cuboids") or 0)
         penalty = (missing / total * 100) if total > 0 else 0
         penalty = min(penalty, 30)
 
