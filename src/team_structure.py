@@ -71,6 +71,10 @@ def _build_annotator_to_team() -> dict:
 def _daily_target_for_role(role: str) -> int:
     return MAKER_TARGET_DAILY if role == 'Maker' else EDITOR_TARGET_DAILY
 
+def _working_days_excluding_sunday(start: pd.Timestamp, end: pd.Timestamp) -> int:
+    rng = pd.date_range(start, end, freq='D')
+    return int((rng.weekday != 6).sum())
+
 # ------------------------------------------------------------------
 # Period picker (Daily / Weekly / Monthly)
 # ------------------------------------------------------------------
@@ -128,7 +132,7 @@ def _select_period(df: pd.DataFrame):
         sel = st.sidebar.selectbox("Select month", labels, index=len(labels) - 1)
         chosen = opts[labels.index(sel)]
         start, end = chosen[2], chosen[3]
-        multiplier = 21
+        multiplier = _working_days_excluding_sunday(start, end)
         label = f"{calendar.month_name[chosen[1]]} {chosen[0]}"
         
     return {

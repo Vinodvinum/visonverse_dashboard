@@ -56,9 +56,24 @@ def load_team_data(role_map):
     df = df[~df['Name'].isin(['TOTAL', 'DEFICIT'])]
 
     if 'Role' in df.columns:
-        date_columns = [col for col in df.columns if col not in ['Name', 'Rename', 'Role']]
+        raw_date_columns = [col for col in df.columns if col not in ['Name', 'Rename', 'Role']]
     else:
-        date_columns = [col for col in df.columns if col not in ['Name', 'Rename']]
+        raw_date_columns = [col for col in df.columns if col not in ['Name', 'Rename']]
+
+    # Google Sheets can emit duplicate headers as .1/.2 suffixes (e.g., Apr-23, Apr-23.1).
+    # Keep only the first occurrence per base header to avoid double counting daily totals.
+    date_columns = []
+    normalized_header = {}
+    seen_headers = set()
+    for col in raw_date_columns:
+        base = re.sub(r'\.\d+$', '', str(col)).strip()
+        if not base:
+            continue
+        if base in seen_headers:
+            continue
+        seen_headers.add(base)
+        date_columns.append(col)
+        normalized_header[col] = base
 
     df_long = df.melt(
         id_vars=[col for col in ['Name', 'Rename', 'Role'] if col in df.columns],
@@ -66,6 +81,9 @@ def load_team_data(role_map):
         var_name='Date',
         value_name='Cuboids'
     )
+
+    # Normalize the melted date header back to its base value (strip .1/.2 suffixes).
+    df_long['Date'] = df_long['Date'].astype(str).map(normalized_header).fillna(df_long['Date'])
 
     df_long['Cuboids'] = pd.to_numeric(df_long['Cuboids'], errors='coerce')
     df_long = df_long.dropna(subset=['Cuboids'])

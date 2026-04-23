@@ -56,6 +56,13 @@ def _business_days_mon_fri(start, end):
     rng = pd.bdate_range(start, end)
     return len(rng)
 
+def _working_days_excluding_sunday(start, end):
+    """Count all days except Sundays between start and end (inclusive)."""
+    if pd.isna(start) or pd.isna(end):
+        return 0
+    rng = pd.date_range(start, end, freq='D')
+    return int((rng.weekday != 6).sum())
+
 def _aggregate_for_period(df_period, by='Rename'):
     return df_period.groupby(by)['Cuboids'].sum().reset_index().rename(columns={'Cuboids': 'Total Cuboids'})
 
@@ -177,7 +184,7 @@ def render_dashboard(df):
             sel_idx = st.selectbox("Select Month", opt_labels, index=len(opt_labels)-1)
             chosen = opts[opt_labels.index(sel_idx)]
             start_date, end_date = chosen[2], chosen[3]
-            period_multiplier = 21
+            period_multiplier = _working_days_excluding_sunday(start_date, end_date)
             period_label = f"{calendar.month_name[chosen[1]]} {chosen[0]}"
 
         top_filter = st.selectbox("Show", ["All", "Top Performers", "Low Performers"])
@@ -185,7 +192,7 @@ def render_dashboard(df):
         
         st.markdown("---")
         st.write(f"Per-head daily targets: Maker = **{MAKER_TARGET_DAILY}**, Editor = **{EDITOR_TARGET_DAILY}**")
-        st.caption("Targets use fixed multipliers: Daily×1, Weekly×5, Monthly×21 (per your configuration).")
+        st.caption("Targets use multipliers: Daily×1, Weekly×5, Monthly=(days in selected month excluding Sundays).")
 
     # Filter by role
     df_view = df if role_filter == "All" else df[df['Role'] == role_filter].copy()
@@ -290,7 +297,10 @@ def render_dashboard(df):
     # ---------------- Compensation Planner ----------------
     st.markdown("### ⚖️ Compensation Planner")
     today = pd.Timestamp.today().normalize()
-    days_passed = _business_days_mon_fri(start_date, min(today, end_date))
+    if view_period == "Monthly":
+        days_passed = _working_days_excluding_sunday(start_date, min(today, end_date))
+    else:
+        days_passed = _business_days_mon_fri(start_date, min(today, end_date))
     remaining_days = max(period_multiplier - days_passed, 0)
     
     if remaining_days <= 0:
