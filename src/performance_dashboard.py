@@ -27,6 +27,7 @@ def _parse_dates(df):
                     df['Date_dt'] = df['Date_dt'].apply(lambda d: d.replace(year=d.year - 1) if pd.notna(d) and d > today else d)else:
         df['Date_dt'] = pd.to_datetime(df['Date_dt'], errors='coerce')
     df['Date_dt'] = df['Date_dt'].dt.normalize()
+    return df
 
 def _daily_target_for_role(role):
     return MAKER_TARGET_DAILY if role == 'Maker' else EDITOR_TARGET_DAILY
