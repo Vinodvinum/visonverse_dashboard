@@ -292,7 +292,7 @@ def render_dashboard(df):
     # Apply styles: highlight TOTAL row, color Deficit column per value, then format numbers
     styled = (display_with_total.style
               .apply(highlight_total, axis=1)
-              .applymap(color_deficit, subset=['Deficit'])
+              .map(color_deficit, subset=['Deficit'])
               .format({'Total Cuboids':'{:,}','Period Target':'{:,}','Deficit':'{:+,}'}))
 
     st.dataframe(styled)
