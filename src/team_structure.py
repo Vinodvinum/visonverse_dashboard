@@ -94,7 +94,7 @@ def _select_period(df: pd.DataFrame):
             d for d in df['Date_dt'].dt.date.unique()
             if d is not None and 2000 <= d.year <= max_year
         )
-        default_date = pd.Timestamp.today().date()
+        default_date = available[-1] if available else pd.Timestamp.today().date()
         sel_date = st.sidebar.date_input(
             "Select date", value=default_date,
             min_value=available[0] if available else None,
