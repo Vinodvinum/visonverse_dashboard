@@ -184,7 +184,8 @@ def render_dashboard(df):
         selected_person = st.selectbox(\"Select person (Personal tracker)\", [\"(none)\"] + sorted(df['Rename'].unique()))
         
         st.markdown(\"---\")
-        st.write(f\"Per-head daily targets: Maker = **{MAKER_TARGET_DAILY}**, Editor = **{EDITOR_TARGET_DAILY}**\")
+        st.write(f\"Per-head daily targets: Maker = **{MAKER # 
+_TARGET_DAILY}**, Editor = **{EDITOR_TARGET_DAILY}**\")
         st.caption(\"Targets use fixed multipliers: Daily×1, Weekly×5, Monthly×21 (per your configuration).\")
 
     # Filter by role
