@@ -88,7 +88,12 @@ def _select_period(df: pd.DataFrame):
     view_period = st.sidebar.radio("Timeframe", ["Daily", "Weekly", "Monthly"], index=0)
 
     if view_period == "Daily":
-        available = sorted(df['Date_dt'].dt.date.unique())
+        today_date = pd.Timestamp.today().date()
+        max_year = today_date.year + 1
+        available = sorted(
+            d for d in df['Date_dt'].dt.date.unique()
+            if d is not None and 2000 <= d.year <= max_year
+        )
         default_date = available[-1] if available else pd.Timestamp.today().date()
         sel_date = st.sidebar.date_input(
             "Select date", value=default_date,

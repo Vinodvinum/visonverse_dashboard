@@ -67,7 +67,7 @@ def render_team_quality():
     with st.sidebar:
         st.header("Filters")
         selected_team = st.selectbox("Select Team", ["All"] + sorted(TEAM_STRUCTURE.keys()))
-        date_range = st.date_input("Submission Date Range", [])
+        date_range = st.date_input("Submission Date Range", value=None)
 
     if selected_team != "All":
         df = df[df["Team"] == selected_team]

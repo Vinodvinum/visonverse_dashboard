@@ -53,6 +53,9 @@ def calc_quality(df):
     )
     if "Date" in df.columns:
         df["Date_dt"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
+        today = pd.Timestamp.today().normalize()
+        valid_year = df["Date_dt"].notna() & df["Date_dt"].dt.year.between(2000, today.year + 1)
+        df.loc[~valid_year, "Date_dt"] = pd.NaT
     return df
 
 
@@ -84,7 +87,7 @@ def render_quality_dashboard():
         sheet_options = ["All"] + list(SHEET_GID_MAP.keys())
         selected_sheet = st.selectbox("Select Sheet", sheet_options)
         selected_person = st.selectbox("Select Annotator", ["All"] + RENAMES)
-        date_range = st.date_input("Submission Date Range", [])
+        date_range = st.date_input("Submission Date Range", value=None)
 
     df = fetch_all_sheets() if selected_sheet == "All" else load_quality_data(sheet_name=selected_sheet)
     if selected_sheet != "All" and not df.empty:

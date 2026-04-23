@@ -110,7 +110,12 @@ def render_dashboard(df):
 
         # Select period
         if view_period == "Daily":
-            available_dates = sorted(df['Date_dt'].dt.date.unique())
+            today_date = pd.Timestamp.today().date()
+            max_year = today_date.year + 1
+            available_dates = sorted(
+                d for d in df['Date_dt'].dt.date.unique()
+                if d is not None and 2000 <= d.year <= max_year
+            )
             default_date = available_dates[-1] if available_dates else pd.Timestamp.today().date()
             sel_date = st.date_input("Select date", value=default_date,
                                      min_value=available_dates[0] if available_dates else None,
