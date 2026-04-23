@@ -31,10 +31,6 @@ def _parse_dates(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     if 'Date_dt' not in df.columns:
         if 'Date' not in df.columns:
-def _parse_dates(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    if 'Date_dt' not in df.columns:
-        if 'Date' not in df.columns:
             st.error("Input dataframe must contain 'Date' or 'Date_dt'.")
             return df
         df['Date_dt'] = pd.to_datetime(df['Date'], errors='coerce')
@@ -47,6 +43,8 @@ def _parse_dates(df: pd.DataFrame) -> pd.DataFrame:
         df['Date_dt'] = pd.to_datetime(df['Date_dt'], errors='coerce')
     df['Date_dt'] = df['Date_dt'].dt.normalize()
     return df
+
+def _expand_aliases(name: str) -> list[str]:
     """
     'Priyanka (Mokshashree CM)' -> 
         ['Priyanka (Mokshashree CM)', 'Priyanka', 'Mokshashree CM']

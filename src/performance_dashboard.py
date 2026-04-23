@@ -16,10 +16,6 @@ def _parse_dates(df):
     """Ensure Date_dt exists and normalized."""
     df = df.copy()
     if 'Date_dt' not in df.columns:
-def _parse_dates(df):
-    """Ensure Date_dt exists and normalized."""
-    df = df.copy()
-    if 'Date_dt' not in df.columns:
         if 'Date' not in df.columns:
             st.error("Input dataframe must contain a 'Date' column.")
             return df
