@@ -12,7 +12,7 @@ EDITORS_COUNT = 10       # configured team size
 
 # ---------------- Utility functions ----------------
 def _parse_dates(df):
-    \"\"\"Ensure Date_dt exists and normalized.\"\"\"
+        """Ensure Date_dt exists and normalized."""
     df = df.copy()
     today = pd.Timestamp.today().normalize()
     min_year = 2000
