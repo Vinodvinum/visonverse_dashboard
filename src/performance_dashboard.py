@@ -15,19 +15,31 @@ EDITORS_COUNT = 10    # configured team size
 def _parse_dates(df):
     """Ensure Date_dt exists and normalized."""
     df = df.copy()
+    today = pd.Timestamp.today().normalize()
+    min_year = 2000
+    max_year = today.year + 1
+
     if 'Date_dt' not in df.columns:
         if 'Date' not in df.columns:
             st.error("Input dataframe must contain a 'Date' column.")
             return df
-        df['Date_dt'] = pd.to_datetime(df['Date'], errors='coerce')
+
+        # First pass: parse full dates if already present.
+        df['Date_dt'] = pd.to_datetime(df['Date'], errors='coerce', dayfirst=True)
         if df['Date_dt'].isna().all():
-            df['Date_dt'] = pd.to_datetime(df['Date'].astype(str) + ' 2025', errors='coerce')
-            # Fix future dates: if parsed date is in the future, subtract 1 year
-            today = pd.Timestamp.today().normalize()
-            df['Date_dt'] = df['Date_dt'].apply(lambda d: d.replace(year=d.year - 1) if pd.notna(d) and d > today else d)
-        df['Date_dt'] = df['Date_dt'].fillna(pd.Timestamp.today().normalize())
+            # Fallback: support header-style dates like "Aug-01" by injecting current year.
+            df['Date_dt'] = pd.to_datetime(df['Date'].astype(str) + f' {today.year}', errors='coerce')
     else:
-        df['Date_dt'] = pd.to_datetime(df['Date_dt'], errors='coerce')
+        df['Date_dt'] = pd.to_datetime(df['Date_dt'], errors='coerce', dayfirst=True)
+
+    # Drop impossible/outlier years that can break date inputs (e.g., year 0001).
+    valid_year = df['Date_dt'].notna() & df['Date_dt'].dt.year.between(min_year, max_year)
+    df.loc[~valid_year, 'Date_dt'] = pd.NaT
+
+    # If parsed date is in the future, shift back by one year.
+    df['Date_dt'] = df['Date_dt'].apply(lambda d: d.replace(year=d.year - 1) if pd.notna(d) and d > today else d)
+
+    df['Date_dt'] = df['Date_dt'].fillna(today)
     df['Date_dt'] = df['Date_dt'].dt.normalize()
     return df
 
