@@ -145,13 +145,13 @@ def render_quality_dashboard():
         "Total Cuboids": "sum", "Missing Cuboids": "sum"
     }).reset_index()
     per_person["Decision"] = per_person["Quality %"].apply(classify_quality)
-    st.dataframe(per_person.style.applymap(text_color))
+    st.dataframe(per_person.style.map(text_color))
 
     # Decision summary
     st.markdown("### 📝 Decision Summary")
     decision_counts = per_person["Decision"].value_counts().reset_index()
     decision_counts.columns = ["Category", "Count"]
-    st.dataframe(decision_counts.style.applymap(text_color))
+    st.dataframe(decision_counts.style.map(text_color))
 
     # Improvement areas
     st.markdown("### 🔍 Improvement Areas")
@@ -164,11 +164,11 @@ def render_quality_dashboard():
             "Weakest Areas": ", ".join(weak) if weak else "None",
             "Quality %": sub["Quality %"].mean()
         })
-    st.dataframe(pd.DataFrame(improvement_df).style.applymap(text_color))
+    st.dataframe(pd.DataFrame(improvement_df).style.map(text_color))
 
     # Detailed table
     st.markdown("### 📋 Detailed Quality Table")
     detail_cols = ["Rename", "Job ID", "BL", "DI", "Status", "Visibility", "Class", "Geometry",
                    "Base Quality %", "Penalty %", "Quality %", "Sheet", "Date_fmt"]
     detail_df = df[[c for c in detail_cols if c in df.columns]]
-    st.dataframe(detail_df.style.applymap(text_color))
+    st.dataframe(detail_df.style.map(text_color))
