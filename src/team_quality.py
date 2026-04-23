@@ -135,7 +135,7 @@ def render_team_quality():
     if selected_team != "All":
         per_person = per_person[per_person["Team"] == selected_team]
 
-    st.dataframe(per_person.style.applymap(text_color))
+    st.dataframe(per_person.style.map(text_color))
 
     # Team-wise detailed tables + storytelling
     st.subheader("📋 Detailed Quality Tables (Team-wise)")
@@ -145,7 +145,7 @@ def render_team_quality():
                        "Visibility", "Class", "Geometry",
                        "Base Quality %", "Penalty %", "Quality %", "Sheet", "Date"]
         detail_df = sub[[c for c in detail_cols if c in sub.columns]]
-        st.dataframe(detail_df.style.applymap(text_color))
+        st.dataframe(detail_df.style.map(text_color))
 
         # Storytelling summary
         avg_base = sub["Base Quality %"].mean()
